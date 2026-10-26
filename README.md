@@ -1,27 +1,40 @@
-# Reproducing "Inertial Quadratic Majorization Minimization"
+# QMME.jl
 
-Code for every figure and table in the experiments of Heng and Wang. The QMME
-solvers are in `src/qmme/`; everything else (baselines, simulated and real
-data, experiment drivers) is in `src/`, and each figure or table is produced
-by one script in `scripts/`.
+This repository contains the code for the paper
 
-## Setup
+> Qiang Heng and Caixing Wang. *Inertial Quadratic Majorization Minimization
+> with Application to Kernel Regularized Learning.*
 
-Julia 1.11 (tested with 1.11.5). From this folder:
+It includes the QMME solvers and one script for each figure and table in the
+paper.
 
+## Installation
+
+1. Install [Julia](https://julialang.org/downloads/) 1.11.
+2. Download this repository and enter its folder:
+   ```
+   git clone https://github.com/qhengncsu/QMME.jl.git
+   cd QMME.jl
+   ```
+3. Install the required packages. `Manifest.toml` fixes their versions, so you
+   get the same versions we used:
+   ```
+   julia --project -e 'using Pkg; Pkg.instantiate()'
+   ```
+4. Optionally, check that everything works (about a minute):
+   ```
+   julia --project -t 4 test/runtests.jl
+   ```
+
+## Reproducing the figures and tables
+
+Each figure or table is produced by one script. For example, to produce
+Figure 3, run
 ```
-julia --project -e 'using Pkg; Pkg.instantiate()'
-julia --project -t 4 test/runtests.jl          # quick checks, about a minute
+julia --project -t 4 scripts/fig3_momentum.jl
 ```
-
-`Manifest.toml` pins every package version. Start Julia with `-t N`: the
-multinomial solvers use N threads and BLAS is set to N threads. The timings
-in the paper use `-t 4` on an Apple M4 (one experiment at a time).
-
-The real datasets are downloaded from the UCI Machine Learning Repository on
-first use and kept in `data/raw/`.
-
-## Figures and tables
+and the figure is saved as `figures/momentum.pdf`. The option `-t 4` uses four
+threads, as in the paper.
 
 | Output | Script | Approximate time |
 |---|---|---|
@@ -33,37 +46,12 @@ first use and kept in `data/raw/`.
 | Table 2 (Codon Usage) | `scripts/table_real_data.jl` | 7 h |
 | Table 3 (HAR) | `scripts/table_real_data.jl --data har` | 3 h |
 
-Run each as `julia --project -t 4 scripts/<script>.jl [options]`. Figures go
-to `figures/` (pdf and png) and tables to `tables/`. The defaults give the
-results in the paper; for example, `--reps 1` gives a quick version of
-Figures 4, 5 and the tables.
+Figures are saved in `figures/` (pdf and png) and tables in `tables/`. The two
+real datasets, Codon Usage and HAR, are downloaded from the UCI Machine
+Learning Repository the first time they are needed.
 
-## Settings
-
-* QMME (Algorithm 1) resets the extrapolation counter when the objective at
-  the extrapolated point increases or when the counter reaches the maximum
-  restart period, set to 100.
-* Section 4.1 (Figures 1–3): one instance, n = 2^14, m = 2^11, σ by the
-  median heuristic, λ = 1e-4; all methods start from zero and stop at
-  ‖∇f‖₂ < 1e-4 or after 1000 updates. Times exclude preprocessing (kernel
-  matrices, factorizations, Lipschitz constants).
-* Sections 4.2–4.3 (Figures 4, 5): 30 λ from 10 to 1e-5 with warm starts,
-  ‖∇f‖₂ < 1e-4, at most 1000 iterations per λ; σ by the median heuristic on the
-  training inputs; times include the kernel matrices.
-* Section 5 (Figure 6, Tables 2, 3): 60/20/20 split (of the 30 subjects for
-  HAR), σ by the median heuristic, class-stratified landmarks, max|∇f| < 1e-2
-  with at most 500 iterations per λ on the path and 1000 for the refit; times
-  include every step. Figure 6 uses max|∇f| < 1e-4 (at most 10000 iterations).
-
-## Layout
-
+Figures 4 and 5 and the two tables average over 20 replications, so they take
+hours. To get a quick version first, run a single replication, for example
 ```
-src/qmme/          QMME solvers: quantile, logistic, multinomial (Algorithms 2 and 3)
-src/objectives.jl  objectives, gradients and Hessians of the three problems
-src/baselines.jl   Newton, FISTA, AdaGD, L-BFGS, linear models
-src/simulation.jl  simulated data and the solution-path experiments
-src/realdata.jl    Codon Usage and HAR: download, split, fit, evaluate
-src/utils.jl       options, saved results, figure and table output
-scripts/           one script per figure or table
-test/runtests.jl   gradient/Hessian checks and QMME-versus-Newton agreement
+julia --project -t 4 scripts/fig4_solution_path.jl --reps 1 --newton-reps 1
 ```
