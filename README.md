@@ -5,7 +5,7 @@ This repository contains the code for the paper
 > Qiang Heng and Caixing Wang. *Inertial Quadratic Majorization Minimization
 > with Application to Kernel Regularized Learning.*
 
-It includes the QMME solvers and one script for each figure and table in the
+It includes the QMME algorithms and one script for each figure and table in the
 paper.
 
 ## Installation
