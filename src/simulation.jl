@@ -57,6 +57,9 @@ const MULTINOMIAL_METHODS = ["Alg2-standard", "Alg3-standard", "Newton", "Alg2-f
 # Solution path of one method (‖∇f‖₂ < 1e-4, at most 1000 iterations per λ).
 function fit_path(problem, method, F, S, y)
     kw = (tol=1e-4, max_iters=1000)
+    if method in ("LBFGS", "Newton-PCG")
+        return competitive_path(problem, method, F, S, y, LAMBDAS; memory=5, kw...)
+    end
     if method == "Newton"
         return newton_path(problem, F, S, y, LAMBDAS; kw...)
     end

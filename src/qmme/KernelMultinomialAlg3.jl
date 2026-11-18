@@ -2,8 +2,7 @@
 #   minimize  -loglik(Y; FB) + (λ/2)*tr(B'SB),
 # with F = K*G' (n-by-m), S = G*K*G' (m-by-m); B is m-by-(q-1) (standard,
 # last class is the reference) or m-by-q (full). Direction solve: whiten by
-# S+ϵI = LL', eigendecompose L^{-1}F'FL^{-T} once, and use the two-eigenvalue
-# structure of E; all decompositions are reused across λ.
+# S+ϵI = LL', eigendecompose L^{-1}F'FL^{-T} once, and eigendecompose E; all decompositions are reused across λ.
 #
 #   include("KernelMultinomialAlg3.jl")
 #   Bs, seconds, stats = KernelMultinomialAlg3.KernelMultinomial(Y, F, S, λs)       # Bs: L×m×(q-1)
@@ -12,18 +11,6 @@
 # Start Julia with `-t N` to use N threads.
 module KernelMultinomialAlg3
 include(joinpath(@__DIR__,"QMMEKernels.jl"))
-
-# Class step for E = (I - 11'/(d+1))/2: eigenvalue 1/(2(d+1)) on the mean
-# direction and 1/2 on its complement.
-function class_solve!(out,rhs,means,den_center,den_mean)
-    m,d=size(rhs); fill!(means,0.0)
-    @inbounds for j=1:d, i=1:m; means[i]+=rhs[i,j]; end
-    @inbounds for i=1:m; means[i]/=d; end
-    @inbounds for j=1:d, i=1:m
-        out[i,j]=(rhs[i,j]-means[i])/den_center[i]+means[i]/den_mean[i]
-    end
-    out
-end
 
 """Regularization path over λs with warm starts. Returns (Bs, seconds, stats):
 Bs is length(λs)-by-m-by-d, seconds includes all preparation, stats has one
@@ -62,9 +49,10 @@ function solve(Y,F,S,λs,full,ϵ,momentum,maxc,history,Binit;kw...)
     a=max.(a,0.)
     J=L'\Γ; Jt=permutedims(J); Ft=permutedims(F); St=permutedims(S)
     ws=Workspace(n,m,d); pen=zeros(m,d); rhs=zeros(m,d); scaled=zeros(m,d)
-    means=zeros(m); dc=zeros(m); dm=zeros(m)
+    e,V=sym_eigen((Matrix{Float64}(I,d,d).-ones(d,d)./(d+1))./2)
+    denom=zeros(m,d); rotated=zeros(m,d)
     block=(R,e,r0,len)->multinomial_block!(R,e,labels,full,r0,len)
-    setup!(λ)=(@. dc=a/2+λ; @. dm=a/(2*(d+1))+λ)
+    setup!(λ)=(denom .= a .* transpose(e) .+ λ)
     function objective_gradient!(g,B,λ)
         obj=loss_gradient!(g,ws,Ft,B,block,maxc)
         tmul!(pen,St,B,maxc)
@@ -73,7 +61,9 @@ function solve(Y,F,S,λs,full,ϵ,momentum,maxc,history,Binit;kw...)
     end
     function direction!(dir,g,λ)
         tmul!(rhs,J,g,maxc)                 # J'g
-        class_solve!(scaled,rhs,means,dc,dm)
+        mul!(rotated,rhs,V)
+        rotated ./= denom
+        mul!(scaled,rotated,transpose(V))
         tmul!(dir,Jt,scaled,maxc)           # J*scaled
     end
     B0=Binit===nothing ? zeros(m,d) : Matrix{Float64}(Binit)

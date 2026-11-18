@@ -55,3 +55,30 @@ hours. To get a quick version first, run a single replication, for example
 ```
 julia --project -t 4 scripts/fig4_solution_path.jl --reps 1 --newton-reps 1
 ```
+
+### Additional solution-path comparisons
+
+Run these commands from the repository root to reproduce the Section 4.2
+comparison and the Newton–CG table in the response. The original path timings
+were collected with Julia 1.12.7 and four threads. The first command runs
+QMME, Newton and L-BFGS on three matched instances. The next two complete
+the five L-BFGS instances and the first matched Newton–CG instance.
+
+```sh
+julia --project=. -t4 scripts/competitive_paths.jl
+QMME_METHODS=LBFGS QMME_REPS=5 julia --project=. -t4 scripts/competitive_paths.jl
+QMME_METHODS=Newton-PCG QMME_REPS=1 julia --project=. -t4 scripts/competitive_paths.jl
+python3 scripts/summarize_competitive_paths.py
+```
+
+Each run uses 30 warm-started penalties at both projection dimensions
+(128 and 512). L-BFGS uses memory 5 and up to 1,000 updates per penalty.
+Newton–CG uses matrix-free Hessian products and a block-Jacobi preconditioner
+with blocks of up to 64 coefficients within each class. The summary reports
+elapsed seconds per path and counts fits meeting the gradient tolerance
+of 1e-4. Per-penalty records are saved in `results/competitive_paths/`;
+completed paths are reused. Set `QMME_OUT` to a fresh directory when
+changing settings, and pass that directory to the summary script.
+
+To check Hessian products, preconditioned CG residuals and convergence on
+small problems, run `julia --project=. -t4 test/validate_path_baselines.jl`.

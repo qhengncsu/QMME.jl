@@ -20,6 +20,7 @@ using .KernelQuantileQMME, .KernelLogisticQMME, .KernelMultinomialAlg2, .KernelM
 include("utils.jl")
 include("objectives.jl")
 include("baselines.jl")
+include("path_baselines.jl")
 include("simulation.jl")
 include("realdata.jl")
 
