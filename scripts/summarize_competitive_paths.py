@@ -1,4 +1,4 @@
-"""Summarize the saved regularization paths for Section 4.2 and the response."""
+"""Summarize regularization-path runtimes and gradient tolerance counts."""
 import csv
 import sys
 from pathlib import Path
@@ -36,8 +36,8 @@ def report(title, cases, methods, repetitions):
     print()
 
 
-report("Section 4.2 and response, five matched instances", [("multinomial", 512)],
+report("Multinomial regression at m = 512, five matched instances", [("multinomial", 512)],
        ("LBFGS", "QMME", "Newton"), range(1, 6))
-report("Section 4.2, all L-BFGS instances", settings, ("LBFGS",), range(1, 6))
-report("Response Table R1, first matched instance", settings,
+report("L-BFGS across models and projection dimensions, five instances", settings, ("LBFGS",), range(1, 6))
+report("Four solvers on the first matched instance", settings,
        ("QMME", "Newton", "LBFGS", "Newton-PCG"), (1,))

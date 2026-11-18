@@ -58,29 +58,14 @@ julia --project -t 4 scripts/fig4_solution_path.jl --reps 1 --newton-reps 1
 
 ### Additional solution-path comparisons
 
-Run these commands from the repository root to reproduce the Section 4.2
-comparison and Table R1 in the response. The original path timings were
-collected with Julia 1.12.7 and four threads. The first command runs L-BFGS,
-QMME and Newton on the same five instances. The second adds Newton–CG on the
-first instance for Table R1.
+These experiments compare QMME, Newton and L-BFGS on five simulated instances of
+kernel quantile, logistic and multinomial regression at projection dimensions 128
+and 512. Newton–CG is included on the first instance. We report runtime for the full
+30-penalty path and the number of fits reaching a gradient norm below `1e-4`.
+Timings use Julia 1.12.7 with four threads.
 
 ```sh
 QMME_REPS=5 julia --project=. -t4 scripts/competitive_paths.jl
 QMME_METHODS=Newton-PCG QMME_REPS=1 julia --project=. -t4 scripts/competitive_paths.jl
 python3 scripts/summarize_competitive_paths.py
 ```
-
-Each run uses 30 warm-started penalties at both projection dimensions
-(128 and 512). L-BFGS uses memory 5 and up to 1,000 updates per penalty.
-Newton–CG uses matrix-free Hessian products and a block-Jacobi preconditioner
-with blocks of up to 64 coefficients within each class. For the multinomial
-comparison at m = 512, the summary averages the five path times (kernel
-construction plus solver time) and counts how many of the 150 fits have a
-gradient norm below 1e-4. It also reports L-BFGS results for each model and
-dimension, and the single-instance results for Table R1.
-Per-penalty records are saved in `results/competitive_paths/`;
-completed paths are reused. Set `QMME_OUT` to a fresh directory when
-changing settings, and pass that directory to the summary script.
-
-To check Hessian products, preconditioned CG residuals and convergence on
-small problems, run `julia --project=. -t4 test/validate_path_baselines.jl`.
